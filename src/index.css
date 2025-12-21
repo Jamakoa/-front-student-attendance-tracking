@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ... vos configurations existantes ... */
+
+@layer utilities {
+  /* 1. Style de base pour scrollbar moderne (Fine et arrondie) */
+  .scrollbar-thin {
+    scrollbar-width: thin; /* Pour Firefox */
+    scrollbar-color: #cbd5e1 transparent; /* Pour Firefox */
+  }
+
+  /* Pour Chrome, Edge, Safari */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1; /* Gris clair */
+    border-radius: 20px;
+    border: 3px solid transparent; /* Astuce pour créer de l'espace autour */
+    background-clip: content-box;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8; /* Plus foncé au survol */
+  }
+
+  /* 2. Variation pour la Sidebar Sombre (Dark Mode) */
+  .scrollbar-dark {
+    scrollbar-width: thin;
+    scrollbar-color: #475569 transparent;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    background-color: #475569; /* Gris foncé bleuté pour aller avec votre sidebar */
+    border-radius: 20px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b;
+  }
+  
+  /* 3. Option pour cacher complètement la scrollbar (mais garder le scroll) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer utilities {
+  /* Cacher la scrollbar tout en gardant le scroll actif */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+}
