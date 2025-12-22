@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { X, Radar, Keyboard } from 'lucide-react';
-import { useDevice } from '@/components/hooks/useDevice'; // Hook mis à jour
-import { deviceService } from '@/services/deviceService'; // Toujours nécessaire pour le Ping/Manual
+import { useDevice } from '@/components/hooks/useDevice';
+import { deviceService } from '@/services/deviceService';
 import { ScanTabContent } from './ScanTabContent';
 import { ManualTabContent } from './ManualTabContent';
 
@@ -14,8 +14,8 @@ const IP_REGEX = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|
 const isValidIpFormat = (ip: string) => IP_REGEX.test(ip);
 
 export function ScanDeviceModal({ isOpen, onClose }: ScanDeviceModalProps) {
-    // 1. On récupère tout depuis le Provider (dont isScanning et scanNetwork)
-    const { listsInterfaces, refreshDevices, refreshInterfaces, scanNetwork, isScanning } = useDevice();
+
+    const { listsInterfaces, refreshDevices, refreshInterfaces, scanNetwork, cancelScan,isScanning } = useDevice(); // To do x3 
     
     const [activeTab, setActiveTab] = useState<'scan' | 'manual'>('scan');
 
@@ -143,6 +143,15 @@ export function ScanDeviceModal({ isOpen, onClose }: ScanDeviceModalProps) {
         if (e.key === 'Enter' && !isAdding && manualIp && pingStatus === 'success' && username && password) handleManualAdd();
     };
 
+    const handleCancelScan = async () => {
+
+        if (timerRef.current) clearInterval(timerRef.current);
+        setTimeLeft(0);
+
+        cancelScan();
+
+    }
+
     if (!isOpen) return null;
 
     return (
@@ -186,6 +195,7 @@ export function ScanDeviceModal({ isOpen, onClose }: ScanDeviceModalProps) {
                             setDuration={setDuration} 
                             setSelectedInterface={setSelectedInterface} 
                             onStartScan={handleScan}
+                            onCancelScan={handleCancelScan}
                         />
                     ) : (
                         <ManualTabContent 

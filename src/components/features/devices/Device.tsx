@@ -10,7 +10,8 @@ import { DeviceAuthModal } from './DeviceAuthModal';
 import { ScanDeviceModal } from './ScanDeviceModal';
 import { useDevice } from "@/components/hooks/useDevice";
 import { ActionMenuDevice } from './ActionMenuDevices';
-import type { Device as DeviceType } from "@/components/model/Device"; 
+import type { Device as DeviceType } from "@/components/model/Device";
+import { toast } from 'sonner';
 
 
 
@@ -69,7 +70,11 @@ export function Device() {
   };
 
   const saveRoom = (theCodeDevice: string) => {
-    console.log(`Nouvelle salle pour le code ${theCodeDevice} : ${tempRoomValue} (Local)`);
+    // Ici tu feras ton appel API plus tard
+    console.log(`Nouvelle salle pour ${theCodeDevice} : ${tempRoomValue}`);
+    toast.success("Salle mise à jour", { 
+      description: `Appareil assigné à : ${tempRoomValue}` 
+    });
     setEditingCode(null);
   };
 
@@ -85,6 +90,9 @@ export function Device() {
     if (isUnlocked) {
         // 2a. Si déjà déverrouillé : On verrouille (Logout)
         lockDevice(device.ipv4);
+        toast.info("Appareil verrouillé", { 
+            description: `La session sur ${device.name} a été fermée.` 
+        });
     } else {
         // 2b. Si verrouillé : On ouvre la modale pour demander le mot de passe
         setAuthModalDevice({ ip: device.ipv4, name: device.name });

@@ -3,19 +3,20 @@ import {
 } from 'lucide-react';
 
 interface ManualTabContentProps {
+
     manualIp: string;
-    setManualIp: (val: string) => void;
     pingStatus: 'idle' | 'checking' | 'success' | 'error';
     manualError: string;
-    
     username: string;
-    setUsername: (val: string) => void;
     password: string;
-    setPassword: (val: string) => void;
-    
     isAdding: boolean;
+
     onAdd: () => void;
+    setUsername: (val: string) => void;
+    setPassword: (val: string) => void;
+    setManualIp: (val: string) => void;
     onKeyDown: (e: React.KeyboardEvent) => void;
+    
 }
 
 export function ManualTabContent({

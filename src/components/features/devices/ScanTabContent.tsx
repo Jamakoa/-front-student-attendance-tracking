@@ -1,5 +1,5 @@
 // src/components/features/devices/tabs/ScanTabContent.tsx
-import { Network, Timer, Radar, Loader2, WifiOff, AlertTriangle } from 'lucide-react';
+import { Network, Timer, Radar, Loader2, WifiOff, AlertTriangle, XCircle } from 'lucide-react';
 import type { NetworkInterface } from '@/components/model/dto/NetworkInterface';
 
 interface ScanTabContentProps {
@@ -14,12 +14,13 @@ interface ScanTabContentProps {
     setDuration: (val: number) => void;
     setSelectedInterface: (val: string) => void;
     onStartScan: () => void;
+    onCancelScan: () => void;
 }
 
 export function ScanTabContent({
     isScanning, timeLeft, duration, selectedInterface, 
     listsInterfaces, isLoadingInterfaces, interfaceError,
-    setDuration, setSelectedInterface, onStartScan,
+    setDuration, setSelectedInterface, onStartScan, onCancelScan
 }: ScanTabContentProps) {
 
 
@@ -37,6 +38,15 @@ export function ScanTabContent({
                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full bg-blue-500 transition-all duration-1000 ease-linear" style={{ width: `${((duration - timeLeft) / duration) * 100}%` }} />
                     </div>
+                    {/* --- 3. LE BOUTON ANNULER --- */}
+                    <button 
+                        onClick={onCancelScan}
+                        className="mt-6 px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 hover:text-rose-700 rounded-full transition-all flex items-center gap-2 mx-auto"
+                    >
+                        <XCircle className="w-4 h-4" />
+                        Annuler la recherche
+                    </button>
+                    {/* --------------------------- */}
                 </div>
             </div>
         );
@@ -67,7 +77,7 @@ export function ScanTabContent({
                 )}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 mt-3">
                 <div className="flex justify-between items-center">
                     <label className="text-sm font-medium text-slate-700 flex items-center gap-2"><Timer className="w-4 h-4 text-slate-400" /> Durée</label>
                     <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">{duration} sec</span>

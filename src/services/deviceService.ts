@@ -52,7 +52,12 @@ export const deviceService = {
 
   lock: async (ip: string) => {
       return await api.post(`${ENDPOINT}/lock`, { ip });
-  }
+  },
+
+  cancelScan: async () => {
+    // Appelle ton endpoint Java: @PostMapping("scan/cancel")
+    return await api.post(`${ENDPOINT}/scan/cancel`);
+  },
 
 
 }

@@ -6,6 +6,7 @@ import { deviceService } from "@/services/deviceService";
 import type { ScanConfig } from "@/components/model/dto/ScanConfig";
 import type { FrontEndSession } from "@/components/model/dto/FrontEndSession";
 import type { NetworkInterface } from "@/components/model/dto/NetworkInterface";
+import { toast } from "sonner";
 
 export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -104,6 +105,25 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       return !!sessions[ip]?.isAuthenticated;
   }, [sessions]);
 
+  const cancelScan = useCallback(async () => {
+    try {
+        // 1. On arrête visuellement le scan tout de suite pour la réactivité UI
+        setIsScanning(false);
+
+        // 2. On envoie l'ordre au backend
+        await deviceService.cancelScan();
+        
+        toast.info("Recherche arrêtée", {
+            description: "Le scan réseau a été interrompu."
+        });
+
+    } catch (error) {
+        console.error("Erreur annulation scan", error);
+        // Même si l'appel échoue, on assure que l'UI est débloquée
+        setIsScanning(false); 
+    }
+  }, []);
+
   useEffect(() => {
       refreshDevices();
       refreshInterfaces();
@@ -121,7 +141,8 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       isDeviceUnlocked, // On expose
       scanNetwork,    
       refreshInterfaces, 
-      refreshDevices
+      refreshDevices,
+      cancelScan
     }}>
       {children}
     </DeviceContext.Provider>
