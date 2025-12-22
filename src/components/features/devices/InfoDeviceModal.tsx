@@ -31,7 +31,7 @@ export function InfoDeviceModal({ isOpen, onClose, targetIp }: InfoDeviceModalPr
             setInfo(null);
 
             try {
-                const data = await deviceService.getDeviceInfo(targetIp, "admin", "Eni#2023");
+                const data = await deviceService.getDeviceInfo(targetIp);
                 if (isMounted) {
                     setInfo(data);
                 }

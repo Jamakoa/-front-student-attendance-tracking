@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import { DeviceContext } from "../DeviceContext";
+import { useState, useCallback, useEffect } from "react";
 import type { Device } from "@/components/model/Device";
 import { deviceService } from "@/services/deviceService";
+import type { ScanConfig } from "@/components/model/dto/ScanConfig";
+import type { FrontEndSession } from "@/components/model/dto/FrontEndSession";
 import type { NetworkInterface } from "@/components/model/dto/NetworkInterface";
-import type { ScanConfig } from "@/components/model/dto/ScanConfig"; // Nouvel import nécessaire
 
 export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -13,6 +14,8 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   
   // 1. Nouvel état pour savoir si un scan est en cours globalement
   const [isScanning, setIsScanning] = useState(false);
+
+  const [sessions, setSessions] = useState<Record<string, FrontEndSession>>({});
 
   const refreshDevices = useCallback(async () => {
       setIsLoading(true);
@@ -63,6 +66,44 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [refreshDevices]);
 
+  // Unlock device function
+  const unlockDevice = useCallback(async (ip: string, username: string, pass: string) => {
+    try {
+        // On demande au Backend de vérifier et stocker la session
+        await deviceService.unlock(ip, username, pass);
+        
+        // Si pas d'erreur, on met à jour l'UI
+        setSessions(prev => ({
+            ...prev,
+            [ip]: { ip, username, isAuthenticated: true }
+        }));
+        return true;
+    } catch (error) {
+        console.error("Erreur authentification:", error);
+        throw error;
+    }
+  }, []);
+
+  // Lock device function
+  const lockDevice = useCallback(async (ip: string) => {
+    try {
+        await deviceService.lock(ip);
+        // On retire la session locale
+        setSessions(prev => {
+            const newSessions = { ...prev };
+            delete newSessions[ip];
+            return newSessions;
+        });
+    } catch (error) {
+        console.error("Erreur lors du verrouillage", error);
+    }
+  }, []);
+
+  // 3. Helper for l'UI
+  const isDeviceUnlocked = useCallback((ip: string) => {
+      return !!sessions[ip]?.isAuthenticated;
+  }, [sessions]);
+
   useEffect(() => {
       refreshDevices();
       refreshInterfaces();
@@ -73,10 +114,14 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       devices, 
       listsInterfaces, 
       isLoading,
-      isScanning,     // On expose l'état du scan
-      scanNetwork,    // On expose la fonction de scan
+      isScanning,
+      sessions,         // On expose les sessions
+      unlockDevice,     // On expose
+      lockDevice,       // On expose
+      isDeviceUnlocked, // On expose
+      scanNetwork,    
       refreshInterfaces, 
-      refreshDevices 
+      refreshDevices
     }}>
       {children}
     </DeviceContext.Provider>
