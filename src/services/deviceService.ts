@@ -2,6 +2,7 @@ import { api } from './api';
 import type { Device } from '@/components/model/Device';
 import type { ScanConfig } from '@/components/model/dto/ScanConfig';
 import type { NetworkInterface } from '@/components/model/dto/NetworkInterface';
+import type { DeviceInfo } from '@/components/model/dto/DeviceInfo';
 
 const ENDPOINT = '/devices';
 
@@ -39,6 +40,10 @@ export const deviceService = {
 
   downloadLogs: async (deviceIndex: number) => {
       return await api.post(`${ENDPOINT}/${deviceIndex}/logs`);
+  },
+  
+  getDeviceInfo: async (ip: string): Promise<DeviceInfo> => {
+      return await api.get<DeviceInfo>(`${ENDPOINT}/info?ip=${ip}`) as unknown as DeviceInfo;
   }
 
 

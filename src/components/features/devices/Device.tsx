@@ -11,6 +11,7 @@ import { useDevice } from "@/components/hooks/useDevice";
 import type { Device as DeviceType } from "@/components/model/Device"; 
 import { ActionMenuDevice } from './ActionMenuDevices';
 //import { deviceService } from '@/services/deviceService';
+import { InfoDeviceModal } from './InfoDeviceModal';
 
 export function Device() {
 
@@ -18,6 +19,8 @@ export function Device() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+
+  const [selectedDeviceForInfo, setSelectedDeviceForInfo] = useState<string | null>(null);
 
   // --- ÉTATS PAGINATION 📄 ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -126,9 +129,17 @@ export function Device() {
   return (
     <div className="min-h-full bg-slate-50/50 p-6 md:p-8" onClick={() => setOpenMenuCode(null)}>
 
+      {/* Modale de Scan */}
       <ScanDeviceModal 
         isOpen={isScanModalOpen} 
         onClose={() => setIsScanModalOpen(false)} 
+      />
+
+      {/* --- NOUVEAU : Modale d'Infos --- */}
+      <InfoDeviceModal 
+        isOpen={!!selectedDeviceForInfo} 
+        onClose={() => setSelectedDeviceForInfo(null)}
+        targetIp={selectedDeviceForInfo}
       />
       
       {/* --- EN-TÊTE --- */}
@@ -315,6 +326,10 @@ export function Device() {
                             onExplore={() => handleExplore(device)}
                             onLogout={() => handleLogout(device)}
                             onPurge={() => handlePurge(device)}
+                            onInfo={() => { 
+                                handleCloseMenu();
+                                setSelectedDeviceForInfo(device.ipv4); 
+                            }}
                           />
                       )}
                     </td>
@@ -424,6 +439,7 @@ export function Device() {
                 </div>
             </div>
         )}
+
       </div>
     </div>
   );

@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { 
   DownloadCloud, UploadCloud, FolderOpen, 
-  LogOut, DatabaseZap 
+  LogOut, DatabaseZap, Info
 } from 'lucide-react';
 import type { Device } from "@/components/model/Device";
 
 interface ActionMenuDeviceProps {
   device: Device;
   onClose: () => void;
+  onInfo: () => void;
   onUpload: () => void;
   onDownload: () => void;
   onExplore: () => void;
@@ -16,8 +17,8 @@ interface ActionMenuDeviceProps {
 }
 
 export function ActionMenuDevice({ 
-  device, onClose, 
-  onUpload, onDownload, onExplore, onLogout, onPurge 
+  device, onClose, onInfo, onUpload,
+  onDownload, onExplore, onLogout, onPurge 
 }: ActionMenuDeviceProps) {
   
   const menuRef = useRef<HTMLDivElement>(null);
@@ -60,6 +61,13 @@ export function ActionMenuDevice({
 
         {/* SECTION 2 : FLUX DEPUIS APPAREIL (Download/View) */}
         <div className="p-1.5 space-y-0.5">
+            <button 
+                onClick={onInfo}
+                className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-3 transition-colors font-medium"
+            >
+                <Info className="w-4 h-4 text-slate-400" />
+                Détails & Infos
+            </button>
             <button 
                 onClick={onDownload}
                 className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-3 transition-colors font-medium"
