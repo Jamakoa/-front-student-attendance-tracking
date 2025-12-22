@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { X, Radar, Keyboard } from 'lucide-react';
-import { useDevice } from '@/components/hooks/useDevice';
-import { deviceService } from '@/services/deviceService';
+import { useDevice } from '@/components/hooks/useDevice'; // Hook mis à jour
+import { deviceService } from '@/services/deviceService'; // Toujours nécessaire pour le Ping/Manual
 import { ScanTabContent } from './ScanTabContent';
 import { ManualTabContent } from './ManualTabContent';
-//import type { ScanConfig } from '@/components/model/dto/ScanConfig';
 
 interface ScanDeviceModalProps {
     isOpen: boolean;
@@ -15,17 +14,18 @@ const IP_REGEX = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|
 const isValidIpFormat = (ip: string) => IP_REGEX.test(ip);
 
 export function ScanDeviceModal({ isOpen, onClose }: ScanDeviceModalProps) {
-    const { listsInterfaces, refreshDevices, refreshInterfaces } = useDevice();
+    // 1. On récupère tout depuis le Provider (dont isScanning et scanNetwork)
+    const { listsInterfaces, refreshDevices, refreshInterfaces, scanNetwork, isScanning } = useDevice();
+    
     const [activeTab, setActiveTab] = useState<'scan' | 'manual'>('scan');
 
-    // États Scan
+    // États UI pour le Scan (Configuration & Animation)
     const [selectedInterface, setSelectedInterface] = useState('');
     const [duration, setDuration] = useState(15); 
-    const [isScanning, setIsScanning] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
     const timerRef = useRef<number | null>(null);
 
-    // États Chargement
+    // États Chargement Interfaces
     const [isLoadingInterfaces, setIsLoadingInterfaces] = useState(false);
     const [interfaceError, setInterfaceError] = useState(false);
 
@@ -62,7 +62,7 @@ export function ScanDeviceModal({ isOpen, onClose }: ScanDeviceModalProps) {
         }
     }, [isOpen, listsInterfaces, selectedInterface, activeTab, isLoadingInterfaces, interfaceError]);
 
-    // 3. Ping Automatique
+    // 3. Ping Automatique (Onglet Manuel)
     useEffect(() => {
         let isMounted = true; 
         if (activeTab !== 'manual' || !manualIp || !isValidIpFormat(manualIp)) { setPingStatus('idle'); return; }
@@ -77,43 +77,66 @@ export function ScanDeviceModal({ isOpen, onClose }: ScanDeviceModalProps) {
         return () => { isMounted = false; clearTimeout(timeoutId); };
     }, [manualIp, activeTab]);
 
-    // 4. Cleanup
+    // 4. Cleanup du Timer
     useEffect(() => { return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, []);
 
     // --- HANDLERS ---
 
     const handleScan = async () => {
         if (!selectedInterface) return;
-        setIsScanning(true); setTimeLeft(duration); 
+
+        // A. On lance l'animation UI (Timer local)
+        setTimeLeft(duration); 
         timerRef.current = window.setInterval(() => {
-            setTimeLeft((prev) => { if (prev <= 1) { if (timerRef.current) clearInterval(timerRef.current); return 0; } return prev - 1; });
+            setTimeLeft((prev) => { 
+                if (prev <= 1) { 
+                    if (timerRef.current) clearInterval(timerRef.current); 
+                    return 0; 
+                } 
+                return prev - 1; 
+            });
         }, 1000);
+
         try {
             const interfaceObj = listsInterfaces.find(i => String(i.index) === String(selectedInterface));
-            console.log("interface Obj : ", interfaceObj?.name);
-
+            
             const scanConfig = {
                 interfaceIndex: parseInt(selectedInterface, 10),
                 interfaceName: interfaceObj ? interfaceObj.name : 'unknown',
                 scanDuration: duration,
             };
 
-            const scanPromise = deviceService.scan(scanConfig);
-            await new Promise(resolve => setTimeout(resolve, duration * 1000));
-            await scanPromise; await refreshDevices(); 
+            // B. APPEL PROVIDER : On lance le scan ET l'attente de l'animation en parallèle
+            const animationPromise = new Promise(resolve => setTimeout(resolve, duration * 1000));
+            const scanPromise = scanNetwork(scanConfig); // <-- Utilisation de la nouvelle fonction
+
+            // On attend que les deux soient terminés pour fermer
+            await Promise.all([scanPromise, animationPromise]);
+            
             onClose();
-        } catch (error) { console.error(error); } finally { if (timerRef.current) clearInterval(timerRef.current); setIsScanning(false); }
+        } catch (error) { 
+            console.error(error); 
+        } finally { 
+            if (timerRef.current) clearInterval(timerRef.current); 
+            // Pas besoin de reset isScanning, le Provider le gère
+        }
     };
 
     const handleManualAdd = async () => {
         setManualError('');
         if (!isValidIpFormat(manualIp)) { setManualError("Format IP invalide"); return; }
         if (!username || !password) { setManualError("Login et Mot de passe requis"); return; }
+        
         setIsAdding(true);
         try {
             await deviceService.addByIp(manualIp, username, password);
-            await refreshDevices(); onClose();
-        } catch { setManualError("Échec connexion : Vérifiez les identifiants."); } finally { setIsAdding(false); }
+            await refreshDevices(); // On met à jour la liste globale
+            onClose();
+        } catch { 
+            setManualError("Échec connexion : Vérifiez les identifiants."); 
+        } finally { 
+            setIsAdding(false); 
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -153,10 +176,16 @@ export function ScanDeviceModal({ isOpen, onClose }: ScanDeviceModalProps) {
                 <div className="p-6 pt-4">
                     {activeTab === 'scan' ? (
                         <ScanTabContent 
-                            isScanning={isScanning} timeLeft={timeLeft} duration={duration}
-                            selectedInterface={selectedInterface} listsInterfaces={listsInterfaces}
-                            isLoadingInterfaces={isLoadingInterfaces} interfaceError={interfaceError}
-                            setDuration={setDuration} setSelectedInterface={setSelectedInterface} onStartScan={handleScan}
+                            isScanning={isScanning} // <-- Vient du Provider maintenant
+                            timeLeft={timeLeft} 
+                            duration={duration}
+                            selectedInterface={selectedInterface} 
+                            listsInterfaces={listsInterfaces}
+                            isLoadingInterfaces={isLoadingInterfaces} 
+                            interfaceError={interfaceError}
+                            setDuration={setDuration} 
+                            setSelectedInterface={setSelectedInterface} 
+                            onStartScan={handleScan}
                         />
                     ) : (
                         <ManualTabContent 

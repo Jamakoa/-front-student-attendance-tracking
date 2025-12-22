@@ -4,11 +4,15 @@ import { DeviceContext } from "../DeviceContext";
 import type { Device } from "@/components/model/Device";
 import { deviceService } from "@/services/deviceService";
 import type { NetworkInterface } from "@/components/model/dto/NetworkInterface";
+import type { ScanConfig } from "@/components/model/dto/ScanConfig"; // Nouvel import nécessaire
 
 export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [listsInterfaces, setListsInterfaces] = useState<NetworkInterface[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 1. Nouvel état pour savoir si un scan est en cours globalement
+  const [isScanning, setIsScanning] = useState(false);
 
   const refreshDevices = useCallback(async () => {
       setIsLoading(true);
@@ -40,6 +44,25 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // 3. NOUVELLE FONCTION : Centralisation de la logique de Scan
+  const scanNetwork = useCallback(async (config: ScanConfig) => {
+    setIsScanning(true);
+    try {
+      // Appel API via le service
+      await deviceService.scan(config);
+      
+      // Une fois le scan terminé, on rafraîchit automatiquement la liste
+      await refreshDevices();
+      
+      return true; // Indique que tout s'est bien passé
+    } catch (error) {
+      console.error("Erreur durant le scan", error);
+      return false; // Indique une erreur
+    } finally {
+      setIsScanning(false);
+    }
+  }, [refreshDevices]);
+
   useEffect(() => {
       refreshDevices();
       refreshInterfaces();
@@ -49,7 +72,9 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     <DeviceContext.Provider value={{ 
       devices, 
       listsInterfaces, 
-      isLoading, 
+      isLoading,
+      isScanning,     // On expose l'état du scan
+      scanNetwork,    // On expose la fonction de scan
       refreshInterfaces, 
       refreshDevices 
     }}>
