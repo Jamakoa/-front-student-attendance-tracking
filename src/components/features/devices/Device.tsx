@@ -1,26 +1,28 @@
-// src/components/features/devices/Device.tsx
-import React, { useState } from 'react';
 import { 
-  Search, Plus, MoreHorizontal, 
-  ScanFace, XCircle, LockKeyholeOpen, LockKeyhole,
-  RefreshCw, MapPin, SearchX, Loader2,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+  Search, Plus, MoreHorizontal, LockKeyhole,
+  ScanFace, XCircle, LockKeyholeOpen, RefreshCw,
+  MapPin, SearchX, Loader2, ChevronLeft, ChevronRight, 
+  ChevronsLeft, ChevronsRight
 } from 'lucide-react';
+import React, { useState } from 'react';
+import { InfoDeviceModal } from './InfoDeviceModal';
+import { DeviceAuthModal } from './DeviceAuthModal';
 import { ScanDeviceModal } from './ScanDeviceModal';
 import { useDevice } from "@/components/hooks/useDevice";
-import type { Device as DeviceType } from "@/components/model/Device"; 
 import { ActionMenuDevice } from './ActionMenuDevices';
-//import { deviceService } from '@/services/deviceService';
-import { InfoDeviceModal } from './InfoDeviceModal';
+import type { Device as DeviceType } from "@/components/model/Device"; 
+
+
 
 export function Device() {
 
-  const { devices } = useDevice();
+  const { devices, unlockDevice, lockDevice, isDeviceUnlocked } = useDevice();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
-
   const [selectedDeviceForInfo, setSelectedDeviceForInfo] = useState<string | null>(null);
+  const [authModalDevice, setAuthModalDevice] = useState<{ip: string, name: string} | null>(null);
+
 
   // --- ÉTATS PAGINATION 📄 ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -76,16 +78,34 @@ export function Device() {
     if (e.key === 'Escape') setEditingCode(null);
   };
 
+  const handleToggleLock = (device: DeviceType) => {
+    // 1. On vérifie l'état actuel (via le Provider)
+    const isUnlocked = isDeviceUnlocked(device.ipv4);
+
+    if (isUnlocked) {
+        // 2a. Si déjà déverrouillé : On verrouille (Logout)
+        lockDevice(device.ipv4);
+    } else {
+        // 2b. Si verrouillé : On ouvre la modale pour demander le mot de passe
+        setAuthModalDevice({ ip: device.ipv4, name: device.name });
+    }
+  };
+
   // --- HANDLERS ACTIONS ---
   const handleCloseMenu = () => setOpenMenuCode(null);
 
   const handleUploadUsers = async (device: DeviceType) => {
     handleCloseMenu();
-    if(!confirm(`Confirmer l'envoi des utilisateurs vers ${device.name} ?`)) return;
+    // Sécurité UI : On empêche l'action si verrouillé
+    if (!isDeviceUnlocked(device.ipv4)) {
+        alert("🔒 Accès refusé : Veuillez déverrouiller l'appareil en cliquant sur le cadenas.");
+        return;
+    }
 
+    if(!confirm(`Confirmer l'envoi des utilisateurs vers ${device.name} ?`)) return;
     setIsLoadingAction(device.codeDevice);
     try {
-        //await deviceService.uploadUsers(device.codeDevice);
+        await new Promise(r => setTimeout(r, 1000)); // Simu appel API
         alert("✅ Synchronisation réussie !");
     } catch (error) {
         console.error(error);
@@ -97,12 +117,15 @@ export function Device() {
 
   const handleDownloadLogs = async (device: DeviceType) => {
     handleCloseMenu();
+    if (!isDeviceUnlocked(device.ipv4)) {
+        alert("🔒 Accès refusé : Veuillez déverrouiller l'appareil.");
+        return;
+    }
     setIsLoadingAction(device.codeDevice);
     try {
-        //await deviceService.downloadLogs(device.codeDevice);
+        await new Promise(r => setTimeout(r, 1000));
         alert("✅ Logs importés !");
-    } catch (error) {
-        console.error(error);
+    } catch {
         alert("❌ Erreur import logs.");
     } finally {
         setIsLoadingAction(null);
@@ -111,16 +134,24 @@ export function Device() {
 
   const handleExplore = (device: DeviceType) => {
     handleCloseMenu();
+    if (!isDeviceUnlocked(device.ipv4)) {
+        alert("🔒 Accès refusé : Veuillez déverrouiller l'appareil.");
+        return;
+    }
     alert(`Fonctionnalité Explorer pour ${device.name} à venir !`);
   };
 
-  const handleLogout = (device: DeviceType) => {
-    handleCloseMenu();
-    console.log("Déconnexion", device.name);
+  const handleLogout = (device: DeviceType) => { 
+      handleCloseMenu(); 
+      lockDevice(device.ipv4); 
   };
 
   const handlePurge = (device: DeviceType) => {
     handleCloseMenu();
+    if (!isDeviceUnlocked(device.ipv4)) {
+        alert("🔒 Accès refusé : Veuillez déverrouiller l'appareil.");
+        return;
+    }
     if(confirm("ATTENTION: Effacer toutes les données ?")) {
         console.log("Purge", device.name);
     }
@@ -135,11 +166,23 @@ export function Device() {
         onClose={() => setIsScanModalOpen(false)} 
       />
 
-      {/* --- NOUVEAU : Modale d'Infos --- */}
+      {/* Modale d'Infos --- */}
       <InfoDeviceModal 
         isOpen={!!selectedDeviceForInfo} 
         onClose={() => setSelectedDeviceForInfo(null)}
         targetIp={selectedDeviceForInfo}
+      />
+
+      {/* Modale Device d'Auth */}
+      <DeviceAuthModal 
+        isOpen={!!authModalDevice}
+        targetDevice={authModalDevice}
+        onClose={() => setAuthModalDevice(null)}
+        onSuccess={async (user, pass) => {
+             if (authModalDevice) {
+                 await unlockDevice(authModalDevice.ip, user, pass);
+             }
+        }}
       />
       
       {/* --- EN-TÊTE --- */}
@@ -199,7 +242,9 @@ export function Device() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {currentDevices.length > 0 ? (
-                currentDevices.map((device) => (
+                currentDevices.map((device) => {
+                  const isUnlocked = isDeviceUnlocked(device.ipv4);
+                  return (
                   <tr 
                     key={device.mac} 
                     className="group hover:bg-slate-50/80 transition-colors duration-200"
@@ -267,23 +312,22 @@ export function Device() {
                       </div>
                     </td>
 
-                    {/* 4. ACCÈS */}
-                    <td className="px-6 py-4 text-center">
-                      {device.isAuthenticated ? (
-                        <div className="inline-flex flex-col items-center group/auth">
-                          <div className="p-2 rounded-full bg-blue-50 text-blue-600 border border-blue-100 shadow-sm mb-1">
-                            <LockKeyholeOpen className="w-4 h-4" />
+                    {/* 4. ACCÈS (INTERACTIF) 🔐 */}
+                    <td className="px-6 py-4 text-center cursor-pointer" onClick={(e) => { e.stopPropagation(); handleToggleLock(device); }}>
+                      <div className={`inline-flex flex-col items-center group/auth transition-all duration-300 ${isUnlocked ? 'scale-105' : 'hover:scale-105'}`}>
+                          <div className={`p-2 rounded-full border shadow-sm mb-1 transition-colors ${
+                              isUnlocked 
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                : 'bg-slate-100 text-slate-400 border-slate-200 group-hover/auth:bg-blue-50 group-hover/auth:text-blue-500 group-hover/auth:border-blue-200'
+                          }`}>
+                            {isUnlocked ? <LockKeyholeOpen className="w-4 h-4" /> : <LockKeyhole className="w-4 h-4" />}
                           </div>
-                          <span className="text-[10px] font-medium text-blue-600">Autorisé</span>
-                        </div>
-                      ) : (
-                        <div className="inline-flex flex-col items-center group/auth">
-                          <div className="p-2 rounded-full bg-slate-100 text-slate-400 border border-slate-200 mb-1">
-                            <LockKeyhole className="w-4 h-4" />
-                          </div>
-                          <span className="text-[10px] font-medium text-slate-400">Verrouillé</span>
-                        </div>
-                      )}
+                          <span className={`text-[10px] font-medium transition-colors ${
+                              isUnlocked ? 'text-emerald-600' : 'text-slate-400 group-hover/auth:text-blue-500'
+                          }`}>
+                              {isUnlocked ? 'Déverrouillé' : 'Verrouillé'}
+                          </span>
+                      </div>
                     </td>
 
                     {/* 5. STATUT */}
@@ -334,7 +378,7 @@ export function Device() {
                       )}
                     </td>
                   </tr>
-                ))
+                )})
               ) : (
                 /* EMPTY STATE */
                 <tr>
