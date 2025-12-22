@@ -1,17 +1,18 @@
 import { api } from './api';
 import type { Device } from '@/components/model/Device';
 import type { ScanConfig } from '@/components/model/dto/ScanConfig';
+import type { NetworkInterface } from '@/components/model/dto/NetworkInterface';
 
 const ENDPOINT = '/devices';
 
 export const deviceService = {
 
-    getDevices: async () => {
-    return await api.get<Device[]>(ENDPOINT); 
-  },
+    getDevices: async (): Promise<Device[]> => {
+      return await api.get<Device[]>(ENDPOINT) as unknown as Device[]; 
+    },
 
-  scanInterfaces: async() => {   
-    return await api.get<string[]>(`${ENDPOINT}/interfaces`);
+  scanInterfaces: async(): Promise<NetworkInterface[]> => {   
+    return await api.get<string[]>(`${ENDPOINT}/interfaces`) as unknown as NetworkInterface[];
   },
 
   scan: async (theScanConfig: ScanConfig) => {
