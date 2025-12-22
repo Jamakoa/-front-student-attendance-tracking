@@ -41,9 +41,16 @@ export const deviceService = {
   downloadLogs: async (deviceIndex: number) => {
       return await api.post(`${ENDPOINT}/${deviceIndex}/logs`);
   },
-  
-  getDeviceInfo: async (ip: string): Promise<DeviceInfo> => {
-      return await api.get<DeviceInfo>(`${ENDPOINT}/info?ip=${ip}`) as unknown as DeviceInfo;
+
+  getDeviceInfo: async (ip: string, username?: string, password?: string): Promise<DeviceInfo> => {
+      const config = {
+          headers: {} as Record<string, string>
+      };
+
+      if (username) config.headers['X-Device-User'] = username;
+      if (password) config.headers['X-Device-Pass'] = password;
+
+      return await api.get<DeviceInfo>(`${ENDPOINT}/info?ip=${ip}`, config) as unknown as DeviceInfo;
   }
 
 
