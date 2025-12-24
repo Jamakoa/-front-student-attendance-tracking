@@ -58,7 +58,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       // Une fois le scan terminé, on rafraîchit automatiquement la liste
       await refreshDevices();
       
-      return true; // Indique que tout s'est bien passé
+      return true;
     } catch (error) {
       console.error("Erreur durant le scan", error);
       return false; // Indique une erreur
