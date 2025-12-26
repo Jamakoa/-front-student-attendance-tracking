@@ -24,6 +24,28 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         const response = await deviceService.getDevices();
         if (Array.isArray(response)) {
           setDevices(response);
+
+          setSessions(prev => {
+            const updatedSessions = { ...prev };
+            
+            response.forEach(device => {
+                // Si le backend dit que c'est ouvert (unlocked: true)
+                // On crée la session locale immédiatement
+                if (device.unlocked === true) {
+                    updatedSessions[device.ipv4] = {
+                        ip: device.ipv4,
+                        username: 'admin', // Valeur par défaut
+                        isAuthenticated: true
+                    };
+                } else {
+                    // Si le backend dit que c'est fermé, on nettoie
+                    delete updatedSessions[device.ipv4];
+                }
+            });
+            
+            return updatedSessions;
+        });
+
         } else {
           setDevices([]);
         }
