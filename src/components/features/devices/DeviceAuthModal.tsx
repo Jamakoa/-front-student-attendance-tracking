@@ -3,9 +3,9 @@ import { Lock, Unlock, Loader2, X, ShieldCheck } from 'lucide-react';
 
 interface DeviceAuthModalProps {
     isOpen: boolean;
-    onClose: () => void;
     targetDevice: { ip: string, name: string } | null;
-    onSuccess: (user: string, pass: string) => Promise<void>; // Promise pour gérer le loading
+    onClose: () => void;
+    onSuccess: (user: string, pass: string) => Promise<void>;
 }
 
 export function DeviceAuthModal({ isOpen, onClose, targetDevice, onSuccess }: DeviceAuthModalProps) {

@@ -6,6 +6,5 @@ export interface Device {
   payload: string;
   status: string;
   room: string;
-  isAuthenticated: boolean;
-  capabilities: ('face' | 'fingerprint' | 'card')[];
+  unlocked: boolean;
 }

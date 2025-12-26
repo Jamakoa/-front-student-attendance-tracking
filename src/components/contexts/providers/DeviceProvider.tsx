@@ -53,19 +53,34 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     setIsScanning(true);
     try {
       // Appel API via le service
-      await deviceService.scan(config);
-      
-      // Une fois le scan terminé, on rafraîchit automatiquement la liste
-      await refreshDevices();
+      const newDevicesFound = await deviceService.scan(config);
+
+      if(Array.isArray(newDevicesFound) && newDevicesFound.length > 0) {
+
+        setDevices((currentDevices) => {
+          const existingMacs = new Set(currentDevices.map(d => d.mac));
+          const trulyNewDevices = newDevicesFound.filter(d => !existingMacs.has(d.mac));
+          console.log(`Ajout de ${trulyNewDevices.length} appareils à la liste.`);
+          return [...currentDevices, ...trulyNewDevices];
+        });
+
+        toast.success("Nouveaux appareils trouvés", {
+            description: `${newDevicesFound.length} appareil(s) ajouté(s) à la liste.`
+        });
+      } else {
+          toast.info("Aucun nouvel appareil trouvé", {
+              description: "Aucun appareil supplémentaire n'a été détecté sur le réseau."
+          });
+      }
       
       return true;
     } catch (error) {
       console.error("Erreur durant le scan", error);
-      return false; // Indique une erreur
+      return false;
     } finally {
       setIsScanning(false);
     }
-  }, [refreshDevices]);
+  }, []);
 
   // Unlock device function
   const unlockDevice = useCallback(async (ip: string, username: string, pass: string) => {
@@ -78,9 +93,15 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
             ...prev,
             [ip]: { ip, username, isAuthenticated: true }
         }));
+        toast.success("Terminal déverrouillé");
         return true;
     } catch (error) {
         console.error("Erreur authentification:", error);
+        const err = error as Error;
+        toast.error("Échec d'authentification", {
+            description: err.message 
+        });
+        
         throw error;
     }
   }, []);
@@ -88,21 +109,30 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   // Lock device function
   const lockDevice = useCallback(async (ip: string) => {
     try {
-        await deviceService.lock(ip);
+        const success =  await deviceService.lock(ip);
         // On retire la session locale
-        setSessions(prev => {
-            const newSessions = { ...prev };
-            delete newSessions[ip];
-            return newSessions;
-        });
+        if (success) {
+            setSessions(prev => {
+                const newSessions = { ...prev };
+                delete newSessions[ip];
+                return newSessions;
+            });
+            // Optionnel : toast.success("Verrouillé");
+            return true;
+        } else {
+            // Si le backend dit "success: false" (mais sans erreur HTTP)
+            console.warn("Le backend a refusé le verrouillage");
+            return false;
+        }
     } catch (error) {
         console.error("Erreur lors du verrouillage", error);
+        return false;
     }
   }, []);
 
   // 3. Helper for l'UI
-  const isDeviceUnlocked = useCallback((ip: string) => {
-      return !!sessions[ip]?.isAuthenticated;
+  const isDeviceUnlocked = useCallback( (ip: string) => {
+    return !!sessions[ip]?.isAuthenticated;
   }, [sessions]);
 
   const cancelScan = useCallback(async () => {
@@ -135,10 +165,10 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       listsInterfaces, 
       isLoading,
       isScanning,
-      sessions,         // On expose les sessions
-      unlockDevice,     // On expose
-      lockDevice,       // On expose
-      isDeviceUnlocked, // On expose
+      sessions,         
+      unlockDevice,     
+      lockDevice,       
+      isDeviceUnlocked,
       scanNetwork,    
       refreshInterfaces, 
       refreshDevices,

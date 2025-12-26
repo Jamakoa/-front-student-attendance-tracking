@@ -187,9 +187,18 @@ export function Device() {
         targetDevice={authModalDevice}
         onClose={() => setAuthModalDevice(null)}
         onSuccess={async (user, pass) => {
-             if (authModalDevice) {
-                 await unlockDevice(authModalDevice.ip, user, pass);
-             }
+          if (authModalDevice) {
+              try {
+              await unlockDevice(authModalDevice.ip, user, pass);
+              
+              setAuthModalDevice(null);
+            } catch (e) {
+              // 3. Si erreur (401), on ne ferme PAS la modale.
+              // Le Toast d'erreur a déjà été affiché par le Provider.
+              // L'utilisateur peut corriger son mot de passe.
+              console.log(e)
+            }
+          }
         }}
       />
       

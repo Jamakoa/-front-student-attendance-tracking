@@ -15,7 +15,7 @@ interface DeviceContextType {
   // Actions
   refreshDevices: () => Promise<void>;
   refreshInterfaces: () => Promise<void>;
-  lockDevice: (ip: string) => Promise<void>;
+  lockDevice: (ip: string) => Promise<boolean>;
   isDeviceUnlocked: (ip: string) => boolean;
   cancelScan: () => void;
   scanNetwork: (config: ScanConfig) => Promise<boolean>;

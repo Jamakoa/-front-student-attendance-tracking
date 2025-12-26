@@ -4,7 +4,6 @@ import { useDevice } from '@/components/hooks/useDevice';
 import { deviceService } from '@/services/deviceService';
 import { ScanTabContent } from './ScanTabContent';
 import { ManualTabContent } from './ManualTabContent';
-import { toast } from 'sonner';
 
 interface ScanDeviceModalProps {
     isOpen: boolean;
@@ -110,7 +109,6 @@ export function ScanDeviceModal({ isOpen, onClose }: ScanDeviceModalProps) {
             // B. APPEL PROVIDER : On lance le scan ET l'attente de l'animation en parallèle
             const animationPromise = new Promise(resolve => setTimeout(resolve, duration * 1000));
             const scanPromise = scanNetwork(scanConfig);
-
 
             // On attend que les deux soient terminés pour fermer
             await Promise.all([scanPromise, animationPromise]);
