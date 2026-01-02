@@ -12,6 +12,7 @@ import { useDevice } from "@/components/hooks/useDevice";
 import { ActionMenuDevice } from './ActionMenuDevices';
 import type { Device as DeviceType } from "@/components/model/Device";
 import { toast } from 'sonner';
+import { DeviceExplorerModal } from './DeviceExplorerModal';
 
 
 
@@ -24,6 +25,7 @@ export function Device() {
   const [selectedDeviceForInfo, setSelectedDeviceForInfo] = useState<string | null>(null);
   const [authModalDevice, setAuthModalDevice] = useState<{ip: string, name: string} | null>(null);
 
+  const [explorerDevice, setExplorerDevice] = useState<{ip: string, name: string} | null>(null);
 
   // --- ÉTATS PAGINATION 📄 ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -143,10 +145,12 @@ export function Device() {
   const handleExplore = (device: DeviceType) => {
     handleCloseMenu();
     if (!isDeviceUnlocked(device.ipv4)) {
-        alert("🔒 Accès refusé : Veuillez déverrouiller l'appareil.");
+        toast.error("Accès refusé", {
+            description: "Veuillez d'abord déverrouiller le cadenas 🔓."
+        });
         return;
     }
-    alert(`Fonctionnalité Explorer pour ${device.name} à venir !`);
+    setExplorerDevice({ ip: device.ipv4, name: device.name });
   };
 
   const handleLogout = (device: DeviceType) => { 
@@ -200,6 +204,14 @@ export function Device() {
             }
           }
         }}
+      />
+
+      {/* Modale Device Explorer */}
+      <DeviceExplorerModal 
+        isOpen={!!explorerDevice}
+        onClose={() => setExplorerDevice(null)}
+        ip={explorerDevice?.ip ?? null}
+        deviceName={explorerDevice?.name ?? ''}
       />
       
       {/* --- EN-TÊTE --- */}

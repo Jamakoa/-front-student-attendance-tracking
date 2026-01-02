@@ -4,6 +4,8 @@ import type { ScanConfig } from '@/components/model/dto/ScanConfig';
 import type { NetworkInterface } from '@/components/model/dto/NetworkInterface';
 import type { DeviceInfo } from '@/components/model/dto/DeviceInfo';
 import type { ApiResponse } from '@/components/model/dto/ApiResponse';
+import type { DeviceUser } from '@/components/model/dto/DeviceUser';
+import type { DeviceLog } from '@/components/model/dto/DeviceLog';
 
 const ENDPOINT = '/devices';
 
@@ -69,5 +71,51 @@ export const deviceService = {
   //   return response.data.unlocked;
   // }
 
+  getDeviceUsers: async (ip: string, offset: number, limit: number): Promise<DeviceUser[]> => {
+      const response = await api.get(`${ENDPOINT}/users?ip=${ip}&offset=${offset}&limit=${limit}`) as unknown as ApiResponse<DeviceUser[]>;
+      return response.data;
+  },
+
+  // src/services/deviceService.ts
+
+  getDeviceLogs: async (
+    ip: string, startTime: string, endTime: string, majorType: number, minorType: number, 
+    searchQuery: string
+  ): Promise<DeviceLog[]> => {
+      const params = new URLSearchParams();
+      params.append('ip', ip);
+      params.append('startTime', startTime);
+      params.append('endTime', endTime);
+
+      // 1. Type d'Événement (Major)
+      if (majorType !== 0) {
+          params.append('majorType', majorType.toString());
+      } else {
+          // Si "Tous", on demande souvent le type 5 par défaut ou on n'envoie rien (selon ton backend)
+          // params.append('majorType', '5'); 
+      }
+
+      // 2. Détail (Minor)
+      if (minorType !== -1) {
+          params.append('minorType', minorType.toString());
+      }
+
+      // 3. Recherche (Matricule ou Nom)
+      if (searchQuery) {
+          // Le backend devra faire un "WHERE employeeNo LIKE %q% OR name LIKE %q%"
+          params.append('searchQuery', searchQuery); 
+      }
+
+      console.log(params);
+
+      const response = await api.get(`${ENDPOINT}/events?${params.toString()}`) as unknown as ApiResponse<DeviceLog[]>;
+      return response.data;
+  },
+
+  importUsersFromDevice: async (ip: string, userIds: string[]) => {
+      // Ici tu feras : await api.post('/devices/import-users', { ip, userIds });
+      console.log(`Importing users from ${ip}:`, userIds);
+      return new Promise((resolve) => setTimeout(resolve, 1000)); // Simulation
+  }
 
 }

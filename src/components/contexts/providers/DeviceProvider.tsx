@@ -82,9 +82,20 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         setDevices((currentDevices) => {
           const existingMacs = new Set(currentDevices.map(d => d.mac));
           const trulyNewDevices = newDevicesFound.filter(d => !existingMacs.has(d.mac));
-          console.log(`Ajout de ${trulyNewDevices.length} appareils à la liste.`);
           return [...currentDevices, ...trulyNewDevices];
         });
+
+//         if (trulyNewDevices.length > 0) {
+//     setSessions(prev => {
+//         const newSessions = { ...prev };
+//         trulyNewDevices.forEach(d => {
+//              if (d.unlocked) { // Si le scan renvoie aussi l'info "unlocked"
+//                  newSessions[d.ipv4] = { ip: d.ipv4, username: 'admin', isAuthenticated: true };
+//              }
+//         });
+//         return newSessions;
+//     });
+// }
 
         toast.success("Nouveaux appareils trouvés", {
             description: `${newDevicesFound.length} appareil(s) ajouté(s) à la liste.`
